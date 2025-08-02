@@ -3,5 +3,13 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "swiper/css": ["node_modules/swiper/swiper.min.css"]
+    }
+  }
 }

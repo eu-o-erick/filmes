@@ -8,20 +8,46 @@ const port = 3000;
 
 app.use(cors());
 
-const moviesDir = "/mnt/disco-rigido/Videos/Filmes";
+const moviesDir = "/mnt/hdd_filmes/Filmes";
 
 // Rota para listar todos os filmes (nomes das pastas)
 app.get("/api/movies", (req, res) => {
   try {
+    const genreMap = {};
+
     const folders = fs
       .readdirSync(moviesDir, { withFileTypes: true })
       .filter((dirent) => dirent.isDirectory())
       .map((dirent) => dirent.name);
 
-    res.json(folders);
+    folders.forEach((folder) => {
+      const infoPath = path.join(moviesDir, folder, "info.json");
+
+      if (!fs.existsSync(infoPath)) return;
+
+      try {
+        const info = JSON.parse(fs.readFileSync(infoPath, "utf-8"));
+        if (!info.genres || !Array.isArray(info.genres)) return;
+
+        info.genres.forEach((genre) => {
+          const name = genre.name;
+          if (!name) return;
+
+          if (!genreMap[name]) {
+            genreMap[name] = [];
+          }
+
+          genreMap[name].push(folder);
+        });
+      } catch (err) {
+        console.warn(`Erro ao ler info.json de "${folder}":`, err.message);
+      }
+    });
+
+    res.json(genreMap);
   } catch (err) {
-    console.error("Erro:", err);
-    res.status(500).json({ error: "Erro ao carregar filmes" });
+    console.error("Erro ao listar filmes por gênero:", err);
+    res.status(500).json({ error: "Erro ao listar filmes por gênero" });
   }
 });
 
