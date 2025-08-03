@@ -37,7 +37,7 @@ function Informations() {
           <p>{formatRuntime(info.runtime)}</p>
         </div>
 
-        <p className="flex items-center gap-2 text-lg">
+        <p className="flex items-center gap-3 text-lg">
           {info.genres.map((genre, i) => {
             if (info.genres.length - 1 > i) {
               return (

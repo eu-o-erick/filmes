@@ -11,8 +11,7 @@ interface Props {
 }
 
 export default function ListMovies({ movieList, colIndex, row }: Props) {
-  const { rowIndex, setRowIndex, setColumnIndexForRow, columnIndexes } =
-    useFocusStore();
+  const { rowIndex, columnIndexes } = useFocusStore();
 
   const swiperRef = useRef<SwiperType | null>(null);
 
@@ -37,10 +36,6 @@ export default function ListMovies({ movieList, colIndex, row }: Props) {
             key={col}
             movie={movie}
             isFocused={rowIndex === row && colIndex === col}
-            focus={() => {
-              setRowIndex(row);
-              setColumnIndexForRow(row, col);
-            }}
           />
         </SwiperSlide>
       ))}

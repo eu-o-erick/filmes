@@ -1,9 +1,66 @@
 @import "tailwindcss";
+@tailwind utilities;
 
 @theme {
   --color-primary: #101d22;
   --color-secondary: #2f3d42;
   --color-font: #ecf0f1;
+}
+
+@font-face {
+  font-family: "K2D";
+  src: url("/fonts/K2D/K2D-Light.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "K2D";
+  src: url("/fonts/K2D/K2D-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "K2D";
+  src: url("/fonts/K2D/K2D-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "K2D";
+  src: url("/fonts/K2D/K2D-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@layer utilities {
+  .mask-fade-top {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0px,
+      black 300px
+    );
+    mask-image: linear-gradient(to bottom, transparent 0px, black 300px);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  .mask-fade-bottom {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black calc(100% - 300px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      black calc(100% - 300px),
+      transparent 100%
+    );
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
 }
 
 body {

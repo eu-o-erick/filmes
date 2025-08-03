@@ -1,18 +1,19 @@
 import cn from "@/utils/cn";
 import { getAssetUrl } from "@/utils/getAssetUrl";
+import { useNavigate } from "react-router";
 
 function MovieItem({
   movie,
   isFocused,
-  focus,
 }: {
   movie: string;
   isFocused: boolean;
-  focus: () => void;
 }) {
+  const navigate = useNavigate();
+
   return (
     <div
-      onClick={focus}
+      onClick={() => navigate(`/${encodeURI(movie)}`)}
       className={cn("cursor-pointer hover:scale-[103%] transition-all", {
         "scale-[103%]": isFocused,
       })}

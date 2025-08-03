@@ -31,17 +31,13 @@ function MovieList() {
   const colIndex = columnIndexes[rowIndex] ?? 0;
 
   return (
-    <div className="px-36 h-[calc(100vh-500px)] relative overflow-hidden">
+    <div
+      className={cn("px-36 h-[calc(100vh-500px)] relative overflow-hidden", {
+        "mask-fade-top": rowIndex === Object.keys(movies).length - 1,
+        "mask-fade-bottom": rowIndex !== Object.keys(movies).length - 1,
+      })}
+    >
       <ListGenres movies={movies} colIndex={colIndex} rowIndex={rowIndex} />
-
-      <div
-        className={cn(
-          "w-full h-44 absolute left-0 bottom-0 z-30 bg-gradient-to-t from-primary/100 via-primary/70 to-transparent transition",
-          {
-            "opacity-0": rowIndex === Object.keys(movies).length - 1,
-          }
-        )}
-      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { type MovieInfo } from "@/types/movie";
 import type { MoviesByGenre } from "@/types/movies";
 
 export async function getMovies(): Promise<MoviesByGenre> {
-  const res = await fetch(`${STATIC_BASE_URL}/api/movies`);
+  const res = await fetch(`${STATIC_BASE_URL}/api/get-all`);
 
   if (!res.ok) throw new Error("Erro ao buscar filmes");
   return res.json();
