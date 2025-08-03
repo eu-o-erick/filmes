@@ -11,15 +11,17 @@ interface Props {
 }
 
 export default function ListMovies({ movieList, colIndex, row }: Props) {
-  const { rowIndex, setRowIndex, setColumnIndexForRow } = useFocusStore();
+  const { rowIndex, setRowIndex, setColumnIndexForRow, columnIndexes } =
+    useFocusStore();
 
   const swiperRef = useRef<SwiperType | null>(null);
 
   useEffect(() => {
-    if (swiperRef.current) {
-      swiperRef.current.slideTo(rowIndex);
+    const currentColumnIndex = columnIndexes[row] - 3;
+    if (swiperRef.current && typeof currentColumnIndex === "number") {
+      swiperRef.current.slideTo(currentColumnIndex);
     }
-  }, [rowIndex]);
+  }, [columnIndexes, row]);
 
   return (
     <Swiper
