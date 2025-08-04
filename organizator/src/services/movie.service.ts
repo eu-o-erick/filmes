@@ -2,14 +2,18 @@ import inquirer from "inquirer";
 import { TMDBMovieResult } from "../interfaces/tmdb.interface";
 import { TMDBService } from "./tmdb.service";
 import { Logger } from "../utils/logger";
+import * as fs from "fs";
+import * as path from "path";
 
 export class MovieService {
   private tmdbService: TMDBService;
   private logger: Logger;
+  private moviesDir: string;
 
   constructor() {
     this.tmdbService = new TMDBService();
     this.logger = new Logger();
+    this.moviesDir = process.argv[2];
   }
 
   public async processMovieList(movies: string[]): Promise<void> {
@@ -56,6 +60,14 @@ export class MovieService {
           selectedMovie.release_date?.split("-")[0] || "Ano desconhecido"
         })`
       );
+
+      const dirPath = path.join(this.moviesDir, selectedMovie.title);
+
+      try {
+        fs.mkdirSync(dirPath);
+      } catch (error) {
+        this.logger.error(`Erro ao criar diretório: ${dirPath}`);
+      }
     } else {
       this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
     }
