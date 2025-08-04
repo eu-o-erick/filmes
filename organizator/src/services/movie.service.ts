@@ -1,23 +1,29 @@
-import axios from "axios";
 import inquirer from "inquirer";
-import {
-  TMDBMovieResult,
-  TMDBMovieDetails,
-} from "../interfaces/tmdb.interface";
+import { TMDBMovieResult } from "../interfaces/tmdb.interface";
 import { TMDBService } from "./tmdb.service";
 import { Logger } from "../utils/logger";
-import * as fs from "fs";
+import { FileHandler } from "../utils/file-handler";
+import { TMDBHelper } from "../utils/tmdb-helper";
+import { ImageDownloaderService } from "./image-downloader.service";
 import * as path from "path";
 
 export class MovieService {
   private tmdbService: TMDBService;
   private logger: Logger;
+  private fileHandler: FileHandler;
+  private tmdbHelper: TMDBHelper;
+  private imageDownloader: ImageDownloaderService;
   private moviesDir: string;
-  private readonly baseImageUrl = "https://image.tmdb.org/t/p/original";
 
   constructor() {
-    this.tmdbService = new TMDBService();
     this.logger = new Logger();
+    this.tmdbService = new TMDBService();
+    this.fileHandler = new FileHandler(this.logger);
+    this.tmdbHelper = new TMDBHelper();
+    this.imageDownloader = new ImageDownloaderService(
+      this.logger,
+      this.fileHandler
+    );
     this.moviesDir = process.argv[2];
   }
 
@@ -31,14 +37,23 @@ export class MovieService {
     this.logger.info(`\nPesquisando: "${movieTitle}"`);
 
     const results = await this.tmdbService.searchMovie(movieTitle);
-
     if (results.length === 0) {
       this.logger.warn(`Nenhum resultado encontrado para: ${movieTitle}`);
       return;
     }
 
+    const selectedMovie = await this.promptMovieSelection(results);
+    if (!selectedMovie) return;
+
+    const dirPath = path.join(this.moviesDir, selectedMovie.title);
+    await this.processMovieDownload(selectedMovie, dirPath);
+  }
+
+  private async promptMovieSelection(
+    results: TMDBMovieResult[]
+  ): Promise<TMDBMovieResult | null> {
     const choices = results.map((movie, index) => ({
-      name: this.formatMovieOption(movie, index + 1),
+      name: this.tmdbHelper.formatMovieOption(movie, index + 1),
       value: index,
     }));
 
@@ -52,7 +67,7 @@ export class MovieService {
         type: "list",
         name: "selectedIndex",
         message: "Selecione a opção correta:",
-        choices: choices,
+        choices,
         pageSize: Math.min(10, choices.length + 1),
         loop: false,
       },
@@ -60,115 +75,40 @@ export class MovieService {
 
     if (selectedIndex >= 0 && selectedIndex < results.length) {
       const selectedMovie = results[selectedIndex];
-      this.logger.success(
-        `\n✅ Selecionado: ${selectedMovie.title} (${
-          selectedMovie.release_date?.split("-")[0] || "Ano desconhecido"
-        })`
-      );
-
-      const dirPath = path.join(this.moviesDir, selectedMovie.title);
-
-      try {
-        fs.mkdirSync(dirPath, { recursive: true });
-      } catch {}
-
-      const movieDetails = await this.tmdbService.getMovieById(
-        selectedMovie.id
-      );
-      if (movieDetails) {
-        // Salva as informações do filme
-        await this.saveMovieDetailsToJson(movieDetails, dirPath);
-
-        // Baixa o poster e o backdrop
-        const downloadPromises = [];
-
-        if (movieDetails.poster_path) {
-          downloadPromises.push(
-            this.downloadImage(movieDetails.poster_path, dirPath, "poster")
-          );
-        } else {
-          this.logger.warn("Nenhum poster disponível para este filme");
-        }
-
-        if (movieDetails.backdrop_path) {
-          downloadPromises.push(
-            this.downloadImage(movieDetails.backdrop_path, dirPath, "backdrop")
-          );
-        } else {
-          this.logger.warn("Nenhum backdrop disponível para este filme");
-        }
-
-        await Promise.all(downloadPromises);
-      }
-    } else {
-      this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
+      this.logSuccess(selectedMovie);
+      return selectedMovie;
     }
+
+    this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
+    return null;
   }
 
-  private async downloadImage(
-    imagePath: string,
-    dirPath: string,
-    imageType: string
-  ): Promise<void> {
-    try {
-      const imageUrl = `${this.baseImageUrl}${imagePath}`;
-      const fileName = `${imageType}${path.extname(imagePath)}`;
-      const filePath = path.join(dirPath, fileName);
-
-      const response = await axios({
-        method: "get",
-        url: imageUrl,
-        responseType: "stream",
-      });
-
-      const writer = fs.createWriteStream(filePath);
-      response.data.pipe(writer);
-
-      return new Promise((resolve, reject) => {
-        writer.on("finish", () => {
-          resolve();
-        });
-        writer.on("error", reject);
-      });
-    } catch (error) {
-      this.logger.error(`Erro ao baixar ${imageType}: ${error}`);
-    }
+  private logSuccess(selectedMovie: TMDBMovieResult): void {
+    this.logger.success(
+      `\n✅ Selecionado: ${selectedMovie.title} (${
+        selectedMovie.release_date?.split("-")[0] || "Ano desconhecido"
+      })`
+    );
   }
 
-  private async saveMovieDetailsToJson(
-    movieDetails: TMDBMovieDetails,
+  private async processMovieDownload(
+    movie: TMDBMovieResult,
     dirPath: string
   ): Promise<void> {
-    const filePath = path.join(dirPath, "info.json");
-
     try {
-      fs.writeFileSync(
-        filePath,
-        JSON.stringify(movieDetails, null, 2),
-        "utf-8"
-      );
+      this.fileHandler.createDirectory(dirPath);
+      const movieDetails = await this.tmdbService.getMovieById(movie.id);
+
+      if (movieDetails) {
+        await this.fileHandler.saveJsonToFile(
+          path.join(dirPath, "info.json"),
+          movieDetails
+        );
+
+        await this.imageDownloader.downloadMovieImages(movieDetails, dirPath);
+      }
     } catch (error) {
-      this.logger.error(`Erro ao salvar informações do filme: ${error}`);
+      this.logger.error(`Erro ao processar filme: ${error}`);
     }
-  }
-
-  private formatMovieOption(movie: TMDBMovieResult, index: number): string {
-    const year = movie.release_date
-      ? movie.release_date.split("-")[0]
-      : "Ano desconhecido";
-    const overview = movie.overview
-      ? movie.overview.substring(0, 120) +
-        (movie.overview.length > 120 ? "..." : "")
-      : "Sem descrição disponível";
-
-    return [
-      `${index}. ${movie.title} (${year})`,
-      `   ${overview}`,
-      movie.original_title && movie.original_title !== movie.title
-        ? `   Título original: ${movie.original_title}`
-        : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
   }
 }
