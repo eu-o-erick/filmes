@@ -2,6 +2,7 @@ import axios from "axios";
 import {
   TMDBMovieResult,
   TMDBSearchResponse,
+  TMDBMovieDetails,
 } from "../interfaces/tmdb.interface";
 import dotenv from "dotenv";
 
@@ -41,6 +42,31 @@ export class TMDBService {
         console.error(`Erro ao buscar filme: ${query}`, error);
       }
       return [];
+    }
+  }
+
+  public async getMovieById(id: number): Promise<TMDBMovieDetails | null> {
+    try {
+      const url = `${this.baseUrl}/movie/${id}?language=pt-BR`;
+
+      const response = await axios.get<TMDBMovieDetails>(url, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          accept: "application/json",
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error(`Erro ao buscar filme pelo ID ${id}:`, {
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+      } else {
+        console.error(`Erro ao buscar filme pelo ID ${id}:`, error);
+      }
+      return null;
     }
   }
 }

@@ -68,6 +68,10 @@ export class MovieService {
       } catch (error) {
         this.logger.error(`Erro ao criar diretório: ${dirPath}`);
       }
+
+      const aa = await this.tmdbService.getMovieById(selectedMovie.id);
+      if (aa) {
+      }
     } else {
       this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
     }
