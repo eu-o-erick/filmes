@@ -1,5 +1,8 @@
 import inquirer from "inquirer";
-import { TMDBMovieResult } from "../interfaces/tmdb.interface";
+import {
+  TMDBMovieResult,
+  TMDBMovieDetails,
+} from "../interfaces/tmdb.interface";
 import { TMDBService } from "./tmdb.service";
 import { Logger } from "../utils/logger";
 import * as fs from "fs";
@@ -69,11 +72,31 @@ export class MovieService {
         this.logger.error(`Erro ao criar diretório: ${dirPath}`);
       }
 
-      const aa = await this.tmdbService.getMovieById(selectedMovie.id);
-      if (aa) {
+      const movieDetails = await this.tmdbService.getMovieById(
+        selectedMovie.id
+      );
+      if (movieDetails) {
+        await this.saveMovieDetailsToJson(movieDetails, dirPath);
       }
     } else {
       this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
+    }
+  }
+
+  private async saveMovieDetailsToJson(
+    movieDetails: TMDBMovieDetails,
+    dirPath: string
+  ): Promise<void> {
+    const filePath = path.join(dirPath, "info.json");
+
+    try {
+      fs.writeFileSync(
+        filePath,
+        JSON.stringify(movieDetails, null, 2),
+        "utf-8"
+      );
+    } catch (error) {
+      this.logger.error(`Erro ao salvar informações do filme: ${error}`);
     }
   }
 
