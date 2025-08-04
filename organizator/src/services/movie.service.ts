@@ -70,34 +70,49 @@ export class MovieService {
 
       try {
         fs.mkdirSync(dirPath, { recursive: true });
-      } catch (error) {
-        this.logger.error(`Erro ao criar diretório: ${dirPath}`);
-      }
+      } catch {}
 
       const movieDetails = await this.tmdbService.getMovieById(
         selectedMovie.id
       );
       if (movieDetails) {
+        // Salva as informações do filme
         await this.saveMovieDetailsToJson(movieDetails, dirPath);
 
+        // Baixa o poster e o backdrop
+        const downloadPromises = [];
+
         if (movieDetails.poster_path) {
-          await this.downloadPoster(movieDetails.poster_path, dirPath);
+          downloadPromises.push(
+            this.downloadImage(movieDetails.poster_path, dirPath, "poster")
+          );
         } else {
           this.logger.warn("Nenhum poster disponível para este filme");
         }
+
+        if (movieDetails.backdrop_path) {
+          downloadPromises.push(
+            this.downloadImage(movieDetails.backdrop_path, dirPath, "backdrop")
+          );
+        } else {
+          this.logger.warn("Nenhum backdrop disponível para este filme");
+        }
+
+        await Promise.all(downloadPromises);
       }
     } else {
       this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
     }
   }
 
-  private async downloadPoster(
-    posterPath: string,
-    dirPath: string
+  private async downloadImage(
+    imagePath: string,
+    dirPath: string,
+    imageType: string
   ): Promise<void> {
     try {
-      const imageUrl = `${this.baseImageUrl}${posterPath}`;
-      const fileName = `poster${path.extname(posterPath)}`; // Mantém a extensão original
+      const imageUrl = `${this.baseImageUrl}${imagePath}`;
+      const fileName = `${imageType}${path.extname(imagePath)}`;
       const filePath = path.join(dirPath, fileName);
 
       const response = await axios({
@@ -111,13 +126,12 @@ export class MovieService {
 
       return new Promise((resolve, reject) => {
         writer.on("finish", () => {
-          this.logger.success(`Poster baixado: ${filePath}`);
           resolve();
         });
         writer.on("error", reject);
       });
     } catch (error) {
-      this.logger.error(`Erro ao baixar poster: ${error}`);
+      this.logger.error(`Erro ao baixar ${imageType}: ${error}`);
     }
   }
 
