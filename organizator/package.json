@@ -1,0 +1,22 @@
+{
+  "name": "organizator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx ts-node src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/inquirer": "^9.0.8",
+    "@types/node": "^24.1.0",
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.1",
+    "inquirer": "^12.9.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
