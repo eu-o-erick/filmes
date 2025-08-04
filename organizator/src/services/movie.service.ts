@@ -1,3 +1,4 @@
+import axios from "axios";
 import inquirer from "inquirer";
 import {
   TMDBMovieResult,
@@ -12,6 +13,7 @@ export class MovieService {
   private tmdbService: TMDBService;
   private logger: Logger;
   private moviesDir: string;
+  private readonly baseImageUrl = "https://image.tmdb.org/t/p/original";
 
   constructor() {
     this.tmdbService = new TMDBService();
@@ -67,7 +69,7 @@ export class MovieService {
       const dirPath = path.join(this.moviesDir, selectedMovie.title);
 
       try {
-        fs.mkdirSync(dirPath);
+        fs.mkdirSync(dirPath, { recursive: true });
       } catch (error) {
         this.logger.error(`Erro ao criar diretório: ${dirPath}`);
       }
@@ -77,9 +79,45 @@ export class MovieService {
       );
       if (movieDetails) {
         await this.saveMovieDetailsToJson(movieDetails, dirPath);
+
+        if (movieDetails.poster_path) {
+          await this.downloadPoster(movieDetails.poster_path, dirPath);
+        } else {
+          this.logger.warn("Nenhum poster disponível para este filme");
+        }
       }
     } else {
       this.logger.warn("Nenhum filme selecionado para este arquivo.\n");
+    }
+  }
+
+  private async downloadPoster(
+    posterPath: string,
+    dirPath: string
+  ): Promise<void> {
+    try {
+      const imageUrl = `${this.baseImageUrl}${posterPath}`;
+      const fileName = `poster${path.extname(posterPath)}`; // Mantém a extensão original
+      const filePath = path.join(dirPath, fileName);
+
+      const response = await axios({
+        method: "get",
+        url: imageUrl,
+        responseType: "stream",
+      });
+
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on("finish", () => {
+          this.logger.success(`Poster baixado: ${filePath}`);
+          resolve();
+        });
+        writer.on("error", reject);
+      });
+    } catch (error) {
+      this.logger.error(`Erro ao baixar poster: ${error}`);
     }
   }
 
